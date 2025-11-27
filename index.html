@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paladar Delivery - Cardápio Online</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Adicionei uma fonte mais "manual/caseira" para os títulos -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Mudei para um Laranja mais acolhedor (estilo cantina/bairro) */
+            --primary-color: #ff9f43; 
+            --primary-color-hover: #e67e22;
+            
+            --dark-bg: #121212;
+            /* OTIMIZAÇÃO: Fundo mais sólido para evitar lag de renderização */
+            --card-bg: #1e1e1e; 
+            
+            --text-light: #f5f5f5;
+            --text-muted: #cccccc;
+            --success: #2ecc71;
+            --danger: #ff6b6b;
+            --border-radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            padding-bottom: 80px;
+
+            /* --- CONFIGURAÇÃO DO BACKGROUND (FUNDO FIXO) --- */
+            /* AQUI VOCÊ COLA O LINK DA SUA IMAGEM DE FUNDO DENTRO DAS ASPAS ABAIXO: */
+            background-image: url('background\ 2.jpg');
+            
+            background-size: cover; 
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+        
+        /* OTIMIZAÇÃO: Removido backdrop-filter para melhorar performance no celular */
+        .content-overlay {
+            min-height: 100vh;
+            background: rgba(18, 18, 18, 0.7); /* Mais escuro para ler melhor sem o blur */
+            width: 100%;
+        }
+
+        /* Títulos com fonte estilo "escrita à mão" */
+        h1, h2, .handwritten {
+            font-family: 'Patrick Hand', cursive;
+        }
+
+        /* Container de Notificações (Toast) */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: #2d3436; /* Cor sólida */
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 4px solid var(--primary-color);
+            pointer-events: auto;
+            min-width: 300px;
+            max-width: 90vw;
+        }
+
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        .toast.info { border-left-color: var(--primary-color); }
+
+        .toast-icon { font-size: 1.2em; }
+        .toast.success .toast-icon { color: var(--success); }
+        .toast.error .toast-icon { color: var(--danger); }
+
+        /* Header Ajustado */
+        .header {
+            position: relative;
+            padding: 40px 20px 30px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+        }
+
+        .logo-container {
+            width: 180px; 
+            height: 180px; 
+            margin: 0 auto 20px;
+            background: #fff; 
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 4px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @media (min-width: 768px) {
+            .logo-container {
+                width: 220px; 
+                height: 220px;
+            }
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .brand-title {
+            font-size: 3.5em; 
+            font-weight: 400;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .brand-subtitle {
+            font-size: 1.2em;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #ddd;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            margin-bottom: 15px; /* Adiciona espaço antes das informações de contato */
+        }
+
+        .contact-info {
+            color: var(--text-light);
+            font-size: 0.95em;
+            line-height: 1.6;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .contact-info i {
+            color: var(--primary-color);
+            margin-right: 8px;
+        }
+
+        /* Navegação */
+        .sticky-nav-container {
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            /* OTIMIZAÇÃO: Cor sólida com leve transparência, sem blur */
+            background: rgba(18, 18, 18, 0.95); 
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 40px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        .horario-info {
+            background: rgba(0, 0, 0, 0.8); /* Mais escuro */
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        
+        .horario-info p {
+            margin: 0;
+            font-size: 1em;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+        
+        .horario-info strong {
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .menu-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            padding: 5px;
+            border-radius: 50px;
+            max-width: 400px;
+            margin: 0 auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary-color);
+            color: #2d3436; 
+            box-shadow: 0 4px 15px rgba(255, 159, 67, 0.3);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 2.2em; 
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed rgba(255, 159, 67, 0.3); 
+            display: inline-block;
+            font-weight: 400;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 60px;
+        }
+
+        /* Cards do Menu */
+        .menu-item {
+            background: var(--card-bg);
+            /* OTIMIZAÇÃO: Removido backdrop-filter */
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            transition: transform 0.2s ease; /* Simplificado */
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+        }
+
+        .menu-item h3 {
+            color: var(--primary-color);
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .menu-item p {
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            font-size: 0.95em;
+        }
+
+        .price-badge {
+            background: rgba(255, 159, 67, 0.15);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            color: var(--primary-color);
+            border: 1px solid rgba(255, 159, 67, 0.2);
+        }
+
+        .add-btn {
+            background: var(--text-light);
+            color: #2d3436;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        .add-btn:hover {
+            background: var(--primary-color);
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9); /* Mais escuro, sem blur */
+            z-index: 2000;
+            /* OTIMIZAÇÃO: Removido backdrop-filter */
+            animation: fadeIn 0.2s ease;
+            padding: 20px;
+            overflow-y: auto; /* Permite rolagem no container principal */
+        }
+
+        .modal-content {
+            background: #1e1e1e;
+            margin: 20px auto;
+            max-width: 700px;
+            border-radius: 24px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+            padding: 30px;
+            border-radius: 24px 24px 0 0;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .close-modal:hover { background: rgba(0,0,0,0.5); }
+        .close-modal i { color: white; font-size: 1.2em; }
+
+        .modal-title {
+            color: white;
+            font-size: 2em;
+            font-weight: 400;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .section-heading {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .option-wrapper {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .option-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .option-card {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-height: 70px;
+            justify-content: center;
+        }
+
+        .option-input:checked + .option-card {
+            background: rgba(255, 159, 67, 0.2);
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .card-label {
+            font-weight: 700;
+            color: var(--text-light);
+            font-size: 1em;
+        }
+
+        .card-sublabel {
+            font-size: 0.85em;
+            color: var(--text-muted);
+        }
+
+        .card-icon {
+            font-size: 1.5em;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .option-input:checked + .option-card .card-icon {
+            color: var(--primary-color);
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 159, 67, 0.3);
+        }
+
+        .confirm-btn:hover {
+            background: var(--primary-color-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 159, 67, 0.4);
+        }
+
+        .cart-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 25px rgba(255, 159, 67, 0.5);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .cart-float:hover {
+            transform: scale(1.1);
+        }
+
+        .cart-float i {
+            color: white;
+            font-size: 1.8em;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+            border: 3px solid var(--dark-bg);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .client-form textarea {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            color: var(--text-light);
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 80px;
+            width: 100%;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .client-form input {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            color: var(--text-light);
+            font-family: 'Roboto', sans-serif;
+            font-size: 1em;
+            width: 100%;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        
+        .client-form input:focus, .client-form textarea:focus { border-color: var(--primary-color); }
+        .client-form label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 0.9em; }
+
+        .payment-option-card {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .payment-option-input:checked + .payment-option-card {
+            border-color: var(--primary-color);
+            background: rgba(255, 159, 67, 0.15);
+        }
+        .payment-option-input:checked + .payment-option-card i { color: var(--primary-color); }
+        .payment-option-input { display: none; }
+
+        /* NOVO: Estilo para seleção de bairros */
+        .bairro-section {
+            background: rgba(255, 159, 67, 0.1);
+            border: 2px solid rgba(255, 159, 67, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .bairro-section h3 {
+            color: var(--primary-color);
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .bairro-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .bairro-option {
+            background: rgba(255,255,255,0.03);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bairro-input:checked + .bairro-option {
+            border-color: var(--primary-color);
+            background: rgba(255, 159, 67, 0.2);
+        }
+
+        .bairro-input {
+            display: none;
+        }
+
+        .consultar-taxa-btn {
+            width: 100%;
+            padding: 12px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .consultar-taxa-btn:hover {
+            background: #1da851;
+        }
+
+        @media (max-width: 768px) {
+            .brand-title { font-size: 2.8em; }
+            .option-grid { grid-template-columns: 1fr 1fr; }
+            
+            /* --- CORREÇÃO DE ROLAGEM MOBILE --- */
+            .modal { 
+                padding: 0; /* Remove padding externo */
+            }
+            .modal-content { 
+                margin: 0; 
+                height: auto;           /* Deixa a altura crescer conforme o conteúdo */
+                min-height: 100%;       /* Ocupa no mínimo a tela toda */
+                border-radius: 0; 
+                max-width: 100%; 
+                overflow-y: visible;    /* Permite que o conteúdo vaze para ser rolado pelo container pai */
+            }
+            /* ---------------------------------- */
+
+            .logo-container { width: 150px; height: 150px; } 
+            .bairro-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Camada de sobreposição para melhor legibilidade -->
+    <div class="content-overlay">
+
+    <!-- Container para Notificações (Toast) -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div class="header">
+        <div class="logo-container">
+            <!-- ÁREA DA LOGO: Substitua o src abaixo pelo link da sua imagem -->
+            <img src="logo test png.png" alt="Logo do Restaurante" id="logoImage">
+        </div>
+        
+        <!-- NOME DO RESTAURANTE: Paladar Delivery -->
+        <h1 class="brand-title">Paladar Delivery</h1>
+        <p class="brand-subtitle">Comida Caseira Feita com Amor</p>
+        
+        <!-- INFORMAÇÕES DE CONTATO E ENDEREÇO -->
+        <div class="contact-info">
+            <p><i class="fas fa-map-marker-alt"></i> Rua Dona Antônia 36, Gruta de Lourdes</p>
+            <p><i class="fas fa-phone"></i> (82) 99644-6502 | (82) 99113-9706</p>
+        </div>
+    </div>
+    
+    <!-- ************************************************* -->
+    <!-- INFORMATIVO DE HORÁRIO -->
+    <div class="container">
+        <div class="horario-info">
+            <p>
+                🍽️ <strong>Almoço:</strong> 11:00h às 15:30h
+                <span style="margin: 0 10px;">|</span>
+                🌙 <strong>Jantar:</strong> 18:30h às 00:00h
+            </p>
+            <p style="font-size: 0.9em; color: #aaa; margin-top: 5px;">
+                Seu pedido pode ser feito a qualquer momento, este é apenas um informativo de funcionamento da cozinha.
+            </p>
+        </div>
+    </div>
+    <!-- ************************************************* -->
+
+    <nav class="sticky-nav-container">
+        <div class="menu-toggle">
+            <button class="toggle-btn active" onclick="showMenu('almoco', this)">
+                <i class="fas fa-sun"></i> Almoço
+            </button>
+            <button class="toggle-btn" onclick="showMenu('jantar', this)">
+                <i class="fas fa-moon"></i> Jantar
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- MENU ALMOÇO -->
+        <div id="almoco-menu" class="menu-section">
+            <h2 class="section-title">Pratos do Dia</h2>
+            <div class="menu-grid" id="pratos-grid"></div>
+
+            <h2 class="section-title">Bebidas</h2>
+            <div class="menu-grid" id="bebidas-grid"></div>
+
+            <!-- SOBREMESAS NO ALMOÇO -->
+            <h2 class="section-title">Sobremesas</h2>
+            <div class="menu-grid" id="sobremesas-almoco-grid"></div>
+        </div>
+
+        <!-- MENU JANTAR -->
+        <div id="jantar-menu" class="menu-section hidden">
+            
+            <h2 class="section-title">Café Regional</h2>
+            <div class="menu-grid" id="cafe-regional-grid-jantar"></div>
+
+            <h2 class="section-title">Bebidas</h2>
+            <div class="menu-grid" id="bebidas-jantar-grid"></div>
+
+            <!-- SOBREMESAS NO JANTAR -->
+            <h2 class="section-title">Sobremesas</h2>
+            <div class="menu-grid" id="sobremesas-jantar-grid"></div>
+        </div>
+    </div>
+
+    <!-- Modal de Seleção (Agora unificado para Marmita e Bebidas com Opção) -->
+    <div id="optionsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="close-modal" onclick="closeModal('optionsModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+                <h2 class="modal-title" id="modalTitle">Nome do Prato/Bebida</h2>
+                <p style="color: white; margin-top: 5px; opacity: 0.9;" id="modalSubtitle">Monte do seu jeito</p>
+            </div>
+            
+            <div class="modal-body">
+                
+                <!-- Opções Dinâmicas para BEBIDAS (Suco, etc.) -->
+                <div id="drinkOptions" class="hidden">
+                    <!-- Mudança: "Escolha o Sabor" para "Escolha uma Opção" para ficar genérico -->
+                    <div class="section-heading">Escolha uma Opção</div>
+                    <div class="option-grid" id="flavorOptionsGrid">
+                        <!-- Conteúdo gerado pelo JS -->
+                    </div>
+                    <!-- Correção: Função genérica para confirmar -->
+                    <button class="confirm-btn" onclick="confirmarItemComOpcao()">
+                        Adicionar ao Carrinho <i class="fas fa-cart-plus"></i>
+                    </button>
+                </div>
+                
+                <!-- Opções Fixas para MARMITA -->
+                <div id="marmitaOptions" class="hidden">
+                    <div class="section-heading">Escolha o Tamanho</div>
+                    <div class="option-grid">
+                        <label class="option-wrapper">
+                            <input type="radio" name="tamanho" value="M" class="option-input" onclick="selectTamanho('M')">
+                            <div class="option-card">
+                                <span class="card-label">Média</span>
+                                <span class="card-sublabel">R$ 15,00 • 2 Comp.</span>
+                            </div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="tamanho" value="G" class="option-input" onclick="selectTamanho('G')">
+                            <div class="option-card">
+                                <span class="card-label">Grande</span>
+                                <span class="card-sublabel">R$ 20,00 • 3 Comp.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="section-heading">Tipo de Arroz</div>
+                    <div class="option-grid">
+                        <label class="option-wrapper">
+                            <input type="radio" name="arroz" value="Arroz Branco" class="option-input">
+                            <div class="option-card"><span class="card-label">Branco</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="arroz" value="Arroz à Grega" class="option-input">
+                            <div class="option-card"><span class="card-label">À Grega</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="arroz" value="Arroz com Cenoura" class="option-input">
+                            <div class="option-card"><span class="card-label">C/ Cenoura</span></div>
+                        </label>
+                    </div>
+
+                    <div class="section-heading">Tipo de Feijão</div>
+                    <div class="option-grid">
+                        <label class="option-wrapper">
+                            <input type="radio" name="feijao" value="Feijão Caseiro" class="option-input">
+                            <div class="option-card"><span class="card-label">Caseiro</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="feijao" value="Feijão Tropeiro" class="option-input">
+                            <div class="option-card"><span class="card-label">Tropeiro</span></div>
+                        </label>
+                    </div>
+
+                    <div class="section-heading">Extras</div>
+                    <label class="option-wrapper" style="margin-bottom: 30px; display: block;">
+                        <input type="checkbox" id="macarrao" class="option-input">
+                        <div class="option-card" style="flex-direction: row; justify-content: space-between; padding: 20px;">
+                            <span class="card-label">Adicionar Macarrão</span>
+                            <i class="far fa-check-circle"></i>
+                        </div>
+                    </label>
+
+                    <div class="section-heading" id="complementosTitle">Complementos (0)</div>
+                    <div class="option-grid" style="grid-template-columns: 1fr 1fr;">
+                        <label class="option-wrapper">
+                            <input type="checkbox" name="complemento" value="Salada Mista" class="option-input" onclick="checkLimit(this)">
+                            <div class="option-card"><span class="card-label">Salada Mista</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="checkbox" name="complemento" value="Vinagrete" class="option-input" onclick="checkLimit(this)">
+                            <div class="option-card"><span class="card-label">Vinagrete</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="checkbox" name="complemento" value="Maionese" class="option-input" onclick="checkLimit(this)">
+                            <div class="option-card"><span class="card-label">Maionese</span></div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="checkbox" name="complemento" value="Batata Frita" class="option-input" onclick="checkLimit(this)">
+                            <div class="option-card"><span class="card-label">Batata Frita</span></div>
+                        </label>
+                    </div>
+
+                    <button class="confirm-btn" onclick="confirmarPedido()">
+                        Confirmar e Adicionar <i class="fas fa-check"></i>
+                    </button>
+                </div> <!-- Fim marmitaOptions -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal do Carrinho -->
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="close-modal" onclick="closeModal('cartModal')">
+                    <i class="fas fa-times"></i>
+                </div>
+                <h2 class="modal-title">Seu Pedido</h2>
+            </div>
+            
+            <div class="modal-body">
+                <div id="cartItemsContainer" style="margin-bottom: 30px;"></div>
+
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-muted);">Total do Pedido:</span>
+                    <span id="cartTotalValue" style="font-size: 1.5em; font-weight: bold; color: var(--primary-color);">R$ 0,00</span>
+                </div>
+
+                <div class="client-form">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-color); font-family: 'Patrick Hand', cursive; font-size: 1.5em;">Dados de Entrega</h3>
+                    
+                    <label>Nome Completo</label>
+                    <input type="text" id="clientName" placeholder="Digite seu nome">
+
+                    <label>Endereço</label>
+                    <textarea id="clientAddress" placeholder="Rua, número, complemento..."></textarea>
+
+                    <!-- NOVA SEÇÃO: Seleção de Bairro -->
+                    <div class="bairro-section">
+                        <h3>📍 Selecione seu Bairro</h3>
+                        <div class="bairro-grid">
+                            <label>
+                                <input type="radio" name="bairro" value="Zé Tenório" class="bairro-input">
+                                <div class="bairro-option">Zé Tenório</div>
+                            </label>
+                            <label>
+                                <input type="radio" name="bairro" value="Ouro Preto" class="bairro-input">
+                                <div class="bairro-option">Ouro Preto</div>
+                            </label>
+                            <label>
+                                <input type="radio" name="bairro" value="Canaã" class="bairro-input">
+                                <div class="bairro-option">Canaã</div>
+                            </label>
+                            <label>
+                                <input type="radio" name="bairro" value="Petrópolis" class="bairro-input">
+                                <div class="bairro-option">Petrópolis</div>
+                            </label>
+                        </div>
+                        <button class="consultar-taxa-btn" onclick="consultarTaxaEntrega()">
+                            <i class="fab fa-whatsapp"></i>
+                            Consultar Taxa de Entrega
+                        </button>
+                    </div>
+
+                    <label>Telefone</label>
+                    <input type="tel" id="clientPhone" placeholder="(00) 00000-0000">
+
+                    <label>Pagamento</label>
+                    <div class="option-grid" style="grid-template-columns: 1fr; gap: 10px;">
+                        <label class="option-wrapper">
+                            <input type="radio" name="paymentMethod" value="Dinheiro" class="payment-option-input" onchange="toggleTroco()">
+                            <div class="payment-option-card">
+                                <i class="fas fa-money-bill-wave card-icon"></i>
+                                <span class="card-label">Dinheiro</span>
+                            </div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="paymentMethod" value="PIX" class="payment-option-input" onchange="toggleTroco()">
+                            <div class="payment-option-card">
+                                <i class="fas fa-qrcode card-icon"></i>
+                                <span class="card-label">PIX</span>
+                            </div>
+                        </label>
+                        <label class="option-wrapper">
+                            <input type="radio" name="paymentMethod" value="Cartão" class="payment-option-input" onchange="toggleTroco()">
+                            <div class="payment-option-card">
+                                <i class="fas fa-credit-card card-icon"></i>
+                                <span class="card-label">Cartão</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="changeGroup" style="display: none; margin-top: 15px;">
+                        <label>Troco para quanto?</label>
+                        <input type="text" id="changeFor" placeholder="R$ 50,00">
+                    </div>
+                </div>
+
+                <button class="whatsapp-btn confirm-btn" style="background: #25D366; color: white;" onclick="enviarPedidoWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> Enviar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carrinho Flutuante -->
+    <div class="cart-float" onclick="abrirCarrinho()">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-count" id="cartCount">0</span>
+    </div>
+    
+    </div> <!-- Fim da content-overlay -->
+
+    <script>
+        // ========================================
+        // CONFIGURAÇÃO DO CARDÁPIO
+        // EDITE OS PREÇOS AQUI FACILMENTE!
+        // ========================================
+        const cardapio = {
+            pratos: [
+                { 
+                    nome: 'Bife à Parmegiana', 
+                    descricao: 'Suculento bife empanado, molho caseiro e queijo.', 
+                    precoM: 22,  // ← EDITE AQUI o preço do tamanho MÉDIO
+                    precoG: 25   // ← EDITE AQUI o preço do tamanho GRANDE
+                },
+                { 
+                    nome: 'Calabresa Acebolada', 
+                    descricao: 'Linguiça calabresa fatiada com cebolas.', 
+                    precoM: 15,  // ← EDITE AQUI
+                    precoG: 20   // ← EDITE AQUI
+                },
+                { 
+                    nome: 'Bisteca Suína', 
+                    descricao: 'Bisteca grelhada no ponto.', 
+                    precoM: 16,  // ← EDITE AQUI
+                    precoG: 21   // ← EDITE AQUI
+                },
+                { 
+                    nome: 'Frango Grelhado', 
+                    descricao: 'Filé de peito de frango leve.', 
+                    precoM: 14,  // ← EDITE AQUI
+                    precoG: 19   // ← EDITE AQUI
+                },
+                { 
+                    nome: 'Peixe do Dia', 
+                    descricao: 'Filé de peixe fresco.', 
+                    precoM: 17,  // ← EDITE AQUI
+                    precoG: 22   // ← EDITE AQUI
+                }
+            ],
+            bebidas: [
+                { 
+                    nome: 'Suco Natural', 
+                    descricao: 'Laranja, Acerola ou Goiaba (500ml)', 
+                    preco: 8,  // ← EDITE AQUI o preço
+                    opcoes: ['Laranja', 'Acerola', 'Goiaba'] 
+                }, 
+                { 
+                    nome: 'Refrigerante Lata', 
+                    descricao: 'Coca-Cola ou Guaraná (350ml)', 
+                    preco: 6,  // ← EDITE AQUI
+                    opcoes: ['Coca-Cola', 'Coca-Cola Zero', 'Guaraná', 'Guaraná Zero']  // Opções de refrigerante
+                },
+                { 
+                    nome: 'Refrigerante 1 Litro', 
+                    descricao: 'Coca-Cola ou Guaraná (1 Litro)', 
+                    preco: 10,  // ← EDITE AQUI
+                    opcoes: ['Coca-Cola', 'Coca-Cola Zero', 'Guaraná', 'Guaraná Zero']
+                },
+                { 
+                    nome: 'Água Mineral', 
+                    descricao: 'Sem gás (500ml)', 
+                    preco: 4  // ← EDITE AQUI
+                }
+            ],
+            cafeRegional: [
+                { 
+                    nome: 'Sopa do Dia', 
+                    descricao: 'Acompanha torradas (Pergunte o sabor do dia).', 
+                    preco: 15  // ← EDITE AQUI
+                }, 
+                { 
+                    nome: 'Macaxeira Gratinada', 
+                    descricao: 'Escolha: Galinha Guisada, Ovos Mexidos ou Queijo Coalho.', 
+                    preco: 20  // ← EDITE AQUI
+                },
+                { 
+                    nome: 'Cuscuz Recheado', 
+                    descricao: 'Recheado com charque desfiada e queijo coalho.', 
+                    preco: 18  // ← EDITE AQUI
+                },
+                {
+                    nome: 'Tapioca Tradicional',
+                    descricao: 'Com recheio de côco ralado.',
+                    preco: 5
+                },
+                {
+                    nome: 'Passaporte',
+                    descricao: 'Pão, salsicha, carne moída, milho, ervilha, queijo e batata palha. Escolha: Carne ou Frango.',
+                    preco: 12,
+                    opcoes: ['Carne', 'Frango'] // Configurado para abrir modal de seleção
+                },
+                {
+                    nome: 'Batata Frita',
+                    descricao: 'Porção com cheddar cremoso e bacon crocante.',
+                    preco: 10
+                }
+            ],
+            // SEÇÃO NOVA: SOBREMESAS (AGORA SEPARADAS)
+            sobremesas: [
+                {
+                    nome: 'Fatia de Bolo',
+                    descricao: 'Bolo de cenoura com cobertura de chocolate.',
+                    preco: 5
+                },
+                {
+                    nome: 'Pudim',
+                    descricao: 'Pudim de leite condensado caseiro.',
+                    preco: 4
+                },
+                {
+                    nome: 'Mousse',
+                    descricao: 'Escolha seu sabor: Limão, Maracujá ou Morango.',
+                    preco: 7,
+                    opcoes: ['Limão', 'Maracujá', 'Morango']
+                }
+            ]
+        };
+
+        // NÚMERO DE WHATSAPP DO RESTAURANTE
+        const WHATSAPP_NUMERO = '5582993941434';  // ← EDITE AQUI seu número
+
+        let carrinho = [];
+        let pratoAtual = null; 
+        let itemComOpcaoAtual = null; 
+        let maxComplementos = 0;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSection('pratos-grid', cardapio.pratos, true);
+            renderSection('bebidas-grid', cardapio.bebidas);
+            renderSection('sobremesas-almoco-grid', cardapio.sobremesas); // Sobremesas no Almoço
+
+            renderSection('cafe-regional-grid-jantar', cardapio.cafeRegional); 
+            renderSection('bebidas-jantar-grid', cardapio.bebidas);
+            renderSection('sobremesas-jantar-grid', cardapio.sobremesas); // Sobremesas no Jantar
+        });
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+            
+            toast.innerHTML = `
+                <i class="fas fa-${icon} toast-icon"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.4s forwards';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // Renderização
+        function renderSection(elementId, items, isMarmita = false) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = items.map(item => {
+                const isSelectable = item.opcoes && item.opcoes.length > 0;
+                
+                let buttonAction;
+                if (isMarmita) {
+                    buttonAction = `abrirModalMarmita(${JSON.stringify(item).replace(/"/g, '&quot;')})`;
+                } else if (isSelectable) {
+                    buttonAction = `abrirModalOpcoes(${JSON.stringify(item).replace(/"/g, '&quot;')})`; 
+                } else {
+                    buttonAction = `adicionarItem(${JSON.stringify(item).replace(/"/g, '&quot;')})`;
+                }
+
+                return `
+                <div class="menu-item">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <h3>${item.nome}</h3>
+                        ${!isMarmita ? `<span class="price-badge">R$ ${item.preco.toFixed(2)}</span>` : ''}
+                    </div>
+                    <p>${item.descricao}</p>
+                    ${isMarmita ? `
+                        <div style="display:flex; gap:10px; margin-bottom:15px;">
+                            <span class="price-badge">M: R$ ${item.precoM.toFixed(2)}</span>
+                            <span class="price-badge">G: R$ ${item.precoG.toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    <button class="add-btn" onclick='${buttonAction}'>
+                        ${isMarmita ? 'Montar <i class="fas fa-arrow-right"></i>' : isSelectable ? 'Escolher <i class="fas fa-check-circle"></i>' : 'Adicionar <i class="fas fa-plus"></i>'}
+                    </button>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function showMenu(tipo, btn) {
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if (tipo === 'almoco') {
+                document.getElementById('almoco-menu').classList.remove('hidden');
+                document.getElementById('jantar-menu').classList.add('hidden');
+            } else {
+                document.getElementById('almoco-menu').classList.add('hidden');
+                document.getElementById('jantar-menu').classList.remove('hidden');
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function resetModal() {
+            document.querySelectorAll('#optionsModal .option-input').forEach(i => i.checked = false);
+            maxComplementos = 0;
+            updateComplementosTitle();
+        }
+
+        function abrirModalOpcoes(item) {
+            itemComOpcaoAtual = item;
+            resetModal();
+            
+            document.getElementById('modalTitle').textContent = item.nome;
+            document.getElementById('modalSubtitle').textContent = `Preço: R$ ${item.preco.toFixed(2)}`;
+
+            document.getElementById('marmitaOptions').classList.add('hidden');
+            document.getElementById('drinkOptions').classList.remove('hidden');
+            
+            renderFlavorOptions(item.opcoes);
+            
+            const modal = document.getElementById('optionsModal');
+            modal.style.display = 'block';
+            modal.scrollTop = 0;
+        }
+
+        function renderFlavorOptions(opcoes) {
+            const grid = document.getElementById('flavorOptionsGrid');
+            grid.innerHTML = opcoes.map(sabor => `
+                <label class="option-wrapper">
+                    <input type="radio" name="sabor" value="${sabor}" class="option-input">
+                    <div class="option-card">
+                        <span class="card-label">${sabor}</span>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        // CORREÇÃO AQUI: Função genérica e robusta para itens com opção
+        function confirmarItemComOpcao() {
+            const opcaoSelecionada = document.querySelector('input[name="sabor"]:checked');
+            
+            if (!opcaoSelecionada) {
+                showToast('Por favor, selecione uma opção.', 'error');
+                return;
+            }
+
+            let descricaoCart;
+            // Verifica se é uma bebida com volume definido entre parênteses (ex: "Suco (500ml)")
+            if (itemComOpcaoAtual.descricao.includes('(') && itemComOpcaoAtual.descricao.includes(')')) {
+                 const volume = itemComOpcaoAtual.descricao.split('(')[1].replace(')', '');
+                 descricaoCart = `${volume} - Sabor: ${opcaoSelecionada.value}`;
+            } else {
+                // Lógica genérica para Passaporte, Mousse, etc. que não têm parênteses
+                descricaoCart = `Opção: ${opcaoSelecionada.value}`;
+            }
+
+            carrinho.push({
+                tipo: 'Item',
+                item: itemComOpcaoAtual.nome,
+                desc: descricaoCart,
+                preco: itemComOpcaoAtual.preco
+            });
+
+            updateCart();
+            closeModal('optionsModal');
+            showToast(`${itemComOpcaoAtual.nome} adicionado!`);
+        }
+
+        // --- LÓGICA DO MODAL DE MARMITA ---
+        function abrirModalMarmita(prato) {
+            pratoAtual = prato;
+            resetModal();
+            
+            document.getElementById('modalTitle').textContent = prato.nome;
+            document.getElementById('modalSubtitle').textContent = 'Monte do seu jeito';
+
+            document.getElementById('drinkOptions').classList.add('hidden');
+            document.getElementById('marmitaOptions').classList.remove('hidden');
+
+            const modal = document.getElementById('optionsModal');
+            modal.style.display = 'block';
+            modal.scrollTop = 0;
+        }
+
+        function selectTamanho(t) {
+            maxComplementos = t === 'M' ? 2 : 3;
+            document.querySelectorAll('input[name="complemento"]').forEach(i => i.checked = false);
+            updateComplementosTitle();
+            
+            const precoM = pratoAtual.precoM.toFixed(2);
+            const precoG = pratoAtual.precoG.toFixed(2);
+            document.querySelector('input[value="M"] + .option-card .card-sublabel').textContent = `R$ ${precoM} • 2 Comp.`;
+            document.querySelector('input[value="G"] + .option-card .card-sublabel').textContent = `R$ ${precoG} • 3 Comp.`;
+        }
+
+        function updateComplementosTitle() {
+            const title = document.getElementById('complementosTitle');
+            if (maxComplementos === 0) {
+                title.innerHTML = 'Selecione um Tamanho primeiro';
+            } else {
+                title.innerHTML = `Escolha até ${maxComplementos} Complementos`;
+            }
+        }
+
+        function checkLimit(checkbox) {
+            if (maxComplementos === 0) {
+                checkbox.checked = false;
+                showToast('Selecione o tamanho da marmita primeiro!', 'error');
+                return;
+            }
+
+            const checked = document.querySelectorAll('input[name="complemento"]:checked').length;
+            if (checked > maxComplementos) {
+                checkbox.checked = false;
+                showToast(`Máximo de ${maxComplementos} complementos permitidos.`, 'error');
+            }
+        }
+
+        function confirmarPedido() {
+            const tamanho = document.querySelector('input[name="tamanho"]:checked');
+            const arroz = document.querySelector('input[name="arroz"]:checked');
+            const feijao = document.querySelector('input[name="feijao"]:checked');
+            
+            if (!tamanho || !arroz || !feijao) {
+                showToast('Por favor, selecione Tamanho, Arroz e Feijão.', 'error');
+                return;
+            }
+
+            const complementos = Array.from(document.querySelectorAll('input[name="complemento"]:checked')).map(c => c.value);
+            
+            if (complementos.length === 0) {
+                showToast('Escolha pelo menos 1 complemento.', 'error');
+                return;
+            }
+
+            const macarrao = document.getElementById('macarrao').checked;
+            const preco = tamanho.value === 'M' ? pratoAtual.precoM : pratoAtual.precoG;
+
+            carrinho.push({
+                tipo: 'Marmita',
+                item: pratoAtual.nome,
+                desc: `Tam: ${tamanho.value} | ${arroz.value}, ${feijao.value} | ${macarrao ? 'C/ Macar.' : 'S/ Macar.'} | ${complementos.join(', ')}`,
+                preco: preco
+            });
+
+            updateCart();
+            closeModal('optionsModal');
+            showToast('Marmita adicionada ao carrinho!');
+        }
+
+        function adicionarItem(item) {
+            carrinho.push({
+                tipo: 'Simples',
+                item: item.nome,
+                desc: item.descricao,
+                preco: item.preco
+            });
+            updateCart();
+            showToast(`${item.nome} adicionado!`);
+        }
+
+        function updateCart() {
+            document.getElementById('cartCount').textContent = carrinho.length;
+        }
+
+        function abrirCarrinho() {
+            if (carrinho.length === 0) {
+                showToast('Seu carrinho está vazio.', 'info');
+                return;
+            }
+            renderCart();
+            const modal = document.getElementById('cartModal');
+            modal.style.display = 'block';
+            modal.scrollTop = 0;
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItemsContainer');
+            let total = 0;
+            
+            container.innerHTML = carrinho.map((item, index) => {
+                total += item.preco;
+                return `
+                <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; color:var(--text-light); font-family: 'Patrick Hand', cursive; font-size: 1.2em;">${item.item}</div>
+                        <div style="font-size:0.85em; color:var(--text-muted); max-width:200px;">${item.desc}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:bold; color:var(--primary-color);">R$ ${item.preco.toFixed(2)}</div>
+                        <div onclick="removerItem(${index})" style="color:var(--danger); font-size:0.8em; cursor:pointer; margin-top:5px;">
+                            <i class="fas fa-trash"></i> Remover
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('cartTotalValue').textContent = `R$ ${total.toFixed(2)}`;
+        }
+
+        function removerItem(index) {
+            carrinho.splice(index, 1);
+            renderCart();
+            updateCart();
+            if (carrinho.length === 0) closeModal('cartModal');
+        }
+
+        function toggleTroco() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            document.getElementById('changeGroup').style.display = paymentMethod && paymentMethod.value === 'Dinheiro' ? 'block' : 'none';
+        }
+
+        // NOVA FUNÇÃO: Consultar Taxa de Entrega via WhatsApp
+        function consultarTaxaEntrega() {
+            const bairro = document.querySelector('input[name="bairro"]:checked');
+            
+            if (!bairro) {
+                showToast('Por favor, selecione seu bairro primeiro.', 'error');
+                return;
+            }
+
+            const mensagem = `Olá! Gostaria de consultar a taxa de entrega para o bairro *${bairro.value}*.`;
+            window.open(`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensagem)}`, '_blank');
+        }
+
+        function enviarPedidoWhatsApp() {
+            const nome = document.getElementById('clientName').value;
+            const endereco = document.getElementById('clientAddress').value;
+            const telefone = document.getElementById('clientPhone').value; 
+            const bairro = document.querySelector('input[name="bairro"]:checked');
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            const trocoPara = document.getElementById('changeFor').value;
+
+            if (!nome || !endereco || !bairro || !paymentMethod) {
+                showToast('Preencha Nome, Endereço, Bairro e Pagamento.', 'error');
+                return;
+            }
+            
+            if (paymentMethod.value === 'Dinheiro' && !trocoPara) {
+                showToast('Por favor, informe para quanto será o troco.', 'error');
+                return;
+            }
+
+            let msg = `*NOVO PEDIDO - PALADAR DELIVERY* 🥘\n\n`;
+            msg += `👤 *Cliente:* ${nome}\n`;
+            msg += `📞 *Telefone:* ${telefone || 'Não informado'}\n`;
+            msg += `📍 *Endereço:* ${endereco}\n`;
+            msg += `🏘️ *Bairro:* ${bairro.value}\n`;
+            msg += `💳 *Pagamento:* ${paymentMethod.value}\n`;
+            
+            if (paymentMethod.value === 'Dinheiro') {
+                msg += `💰 *Troco para:* ${trocoPara}\n`;
+            }
+            
+            msg += `\n🛒 *ITENS:*\n`;
+            
+            let total = 0;
+            carrinho.forEach(i => {
+                msg += `- ${i.item}\n  _${i.desc}_\n  R$ ${i.preco.toFixed(2)}\n\n`;
+                total += i.preco;
+            });
+            
+            msg += `*TOTAL FINAL: R$ ${total.toFixed(2)}*`;
+
+            window.open(`https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(msg)}`, '_blank');
+            
+            carrinho = [];
+            updateCart();
+            closeModal('cartModal');
+            showToast('Pedido enviado! Aguarde a confirmação.','success');
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
